@@ -1,0 +1,23 @@
+# !!! This file managed by Ansible. Any local changes may be overwritten. !!!
+
+# Database administrative login by UNIX sockets
+# note: you may wish to restrict this further later
+local   all         postgres                                peer
+
+# TYPE  DATABASE    USER        CIDR-ADDRESS          METHOD
+local   all         all                               scram-sha-256
+host    all         all         0.0.0.0/0 scram-sha-256
+host    all         all         ::/0 scram-sha-256
+{% for host in accessHosts %}
+host    all         all         {{ host }}/32          trust
+{% endfor %}
+{% for host in postgresHosts %}
+host    all         all         {{ host }}/32          trust
+{% endfor %}
+local   replication     all                             peer
+host    replication     all     127.0.0.1/32            ident
+host    replication     all     ::1/128                 ident
+{% for host in postgresHosts %}
+host    replication     {{ repl_user_username }}      {{ host }}/32  md5
+{% endfor %}
+

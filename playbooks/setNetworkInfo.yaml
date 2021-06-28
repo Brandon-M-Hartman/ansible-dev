@@ -1,0 +1,20 @@
+---
+- hosts: newservers
+  vars:
+    system_hostname: "{{ new_hostname }}"
+    ipv4_address: "{{ new_ipv4_address }}"
+    ipv4_gw: "{{ new_ipv4_gateway }}"
+  tasks:
+    - name: Change hostname of system
+      hostname:
+        name: "{{ system_hostname }}"
+
+    - name: Set network config
+      template:
+        src: templates/ifcfg-ens192.j2
+        dest: /etc/sysconfig/network-scripts/ifcfg-ens192
+
+    - name: Reboot the machine
+      shell: "sleep 5 && reboot"
+      async: 5
+      poll: 0

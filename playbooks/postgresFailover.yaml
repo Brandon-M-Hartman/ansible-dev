@@ -1,0 +1,36 @@
+---
+### Title: postgresFailover.yaml
+### Description: Promotes the designated standby Postgres node to primary, then re-initializes all standby nodes to have them replicate from the new primary.
+### Author: Brandon Hartman
+### Date: 6-28-2021
+- hosts: postgres
+  vars:
+    newPrimaryNode: "{{ new_primary_node_fqdn }}"
+    oldPrimaryNode: "{{ old_primary_node_fqdn }}"
+  tasks:
+
+    - name: Fail if new and old nodes are the same.
+      fail: 
+        msg: Node to failover to and current primary are already the same!
+      when: newPrimaryNode == oldPrimaryNode
+
+    - name: Stop service on old primary node if it's running
+      service:
+        name: postgresql
+        state: stopped
+      when: inventory_hostname in oldPrimaryNode #Only run if we are the old primary node. Use "in" in case of discrepancy between hostname and FQDN.
+
+    - name: Promote the designated PostgreSQL server to primary
+      command: pg_ctl promote -D /var/lib/pgsql/data
+      become: yes
+      become_user: postgres
+      ignore_errors: yes #Promotion may take a bit, so don't worry about errors since if this fails we have much bigger problems.
+      when: inventory_hostname in newPrimaryNode #Only run if we are the new primary node. Use "in" in case of discrepancy between hostname and FQDN.
+
+# Call the Postgres initialization/enforcement playbook to set up the cluster.
+- name: Initialize and enforce our new postgres setup
+  import_playbook: postgresInitEnforce.yaml
+  vars:
+    primary_node_fqdn: "{{ new_primary_node_fqdn }}"
+    restart_postgres: 'true'
+    forceStandbyReinitialize: 'true'

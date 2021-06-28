@@ -1,0 +1,21 @@
+all:
+  hosts:
+  vars:
+    primary_node_fqdn: TARGETPRIMARYNODEFQDN #FQDN of the TARGET primary node to which standbys and Tower nodes should point
+    new_primary_node_fqdn: NEWPRIMARYNODEFQDN #FQDN of the NEW primary node for promotion purposes
+    old_primary_node_fqdn: OLDPRIMARYNODEFQDN #FQDN of the OLD primary node for demotion purposes (stopping old service, etc.)
+    repl_user_uname: repl_user #What we want the replication username to be (we'll ask for the password in the playbook later)
+    restart_postgres: true #Force postgres to restart after the configuration changes? Default is false. Always overridden on standby nodes if replication is failing
+    access_hosts: 192.168.1.XXX,192.168.1.XXX #Must be IP addresses, not FQDNs. Comma separated, no spaces.
+    postgres_hosts: 192.168.1.XXX,192.168.1.XXX #Must be IP addresses, not FQDNs. Comma separated, no spaces.
+    forceStandbyReinitialize: true
+  children:
+    postgres:
+      hosts:
+        hostname.ofpostgresnode.node1:
+        hostname.ofpostgresnode.node2:
+    newservers:
+      hosts:
+        192.168.1.XXX:
+          new_ipv4_address: 192.168.1.XYZ
+          new_ipv4_gateway: 192.168.1.1
